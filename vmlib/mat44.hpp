@@ -193,10 +193,27 @@ Mat44f make_scaling( float aSX, float aSY, float aSZ ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aSX;  // Avoid warnings about unused arguments until the function
-	(void)aSY;  // is properly implemented.
-	(void)aSZ;
-	return kIdentity44f;
+	Mat44f scalingMatrix;
+
+    // Set the diagonal elements for scaling (along X, Y, Z axes)
+    scalingMatrix(0, 0) = aSX;  // Scale on X-axis
+    scalingMatrix(1, 1) = aSY;  // Scale on Y-axis
+    scalingMatrix(2, 2) = aSZ;  // Scale on Z-axis
+
+    // Set other elements to zero
+    scalingMatrix(0, 1) = scalingMatrix(0, 2) = scalingMatrix(0, 3) = 0.0f;
+    scalingMatrix(1, 0) = scalingMatrix(1, 2) = scalingMatrix(1, 3) = 0.0f;
+    scalingMatrix(2, 0) = scalingMatrix(2, 1) = scalingMatrix(2, 3) = 0.0f;
+    scalingMatrix(3, 0) = scalingMatrix(3, 1) = scalingMatrix(3, 2) = 0.0f;
+
+    // Set the last element to 1 for homogeneous coordinates
+    scalingMatrix(3, 3) = 1.0f;
+
+    return scalingMatrix;
+	// (void)aSX;  // Avoid warnings about unused arguments until the function
+	// (void)aSY;  // is properly implemented.
+	// (void)aSZ;
+	// return kIdentity44f;
 }
 
 inline
@@ -217,8 +234,7 @@ Mat44f make_perspective_projection( float aFovInRadians, float aAspect, float aN
     result(3, 2) = -1.f;       // Perspective division term
 
     return result; // Return the perspective projection matrix
-
-
+	
 	// (void)aFovInRadians; // Avoid warnings about unused arguments until the function
 	// (void)aAspect;       // is properly implemented.
 	// (void)aNear;
