@@ -62,9 +62,22 @@ Mat44f operator*( Mat44f const& aLeft, Mat44f const& aRight ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aLeft;   // Avoid warnings about unused arguments until the function
-	(void)aRight;  // is properly implemented.
-	return kIdentity44f;
+    Mat44f result = kIdentity44f; // Copy the original matrix structure
+
+    for (std::size_t i = 0; i < 4; ++i) {
+        for (std::size_t j = 0; j < 4; ++j) {
+            result(i, j) = 0.f; // Ensure initialization for sum
+            for (std::size_t k = 0; k < 4; ++k) {
+                result(i, j) += aLeft(i, k) * aRight(k, j);
+            }
+        }
+    }
+
+    return result; // Return the newly computed matrix
+
+	// (void)aLeft;   // Avoid warnings about unused arguments until the function
+	// (void)aRight;  // is properly implemented.
+	// return kIdentity44f;
 }
 
 constexpr
@@ -72,35 +85,45 @@ Vec4f operator*( Mat44f const& aLeft, Vec4f const& aRight ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aLeft;   // Avoid warnings about unused arguments until the function
-	(void)aRight;  // is properly implemented.
-	return { 0.f, 0.f, 0.f, 0.f };
+    Vec4f result = { 0.f, 0.f, 0.f, 0.f }; // Initialize result vector to zero
+
+    for (std::size_t i = 0; i < 4; ++i) {
+        for (std::size_t j = 0; j < 4; ++j) {
+            result[i] += aLeft(i, j) * aRight[j];
+        }
+    }
+
+    return result; // Return the resultant vector
+
+	// (void)aLeft;   // Avoid warnings about unused arguments until the function
+	// (void)aRight;  // is properly implemented.
+	// return { 0.f, 0.f, 0.f, 0.f };
 }
+
 
 // Functions:
 
-Mat44f invert( Mat44f const& aM ) noexcept;
-
-inline
-Mat44f transpose( Mat44f const& aM ) noexcept
-{
-	Mat44f ret;
-	for( std::size_t i = 0; i < 4; ++i )
-	{
-		for( std::size_t j = 0; j < 4; ++j )
-			ret(j,i) = aM(i,j);
-	}
-	return ret;
-}
 
 inline
 Mat44f make_rotation_x( float aAngle ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aAngle; // Avoid warnings about unused arguments until the function
-	              // is properly implemented.
-	return kIdentity44f;
+    Mat44f result = kIdentity44f; // Copy original identity matrix
+
+    float ca = std::cos(aAngle);
+    float sa = std::sin(aAngle);
+
+    result(1, 1) = ca;
+    result(1, 2) = -sa;
+    result(2, 1) = sa;
+    result(2, 2) = ca;
+
+    return result; // Return the modified matrix
+
+	// (void)aAngle; // Avoid warnings about unused arguments until the function
+	//               // is properly implemented.
+	// return kIdentity44f;
 }
 
 
@@ -109,9 +132,21 @@ Mat44f make_rotation_y( float aAngle ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aAngle; // Avoid warnings about unused arguments until the function
-	              // is properly implemented.
-	return kIdentity44f;
+    Mat44f result = kIdentity44f; // Copy original identity matrix
+
+    float ca = std::cos(aAngle);
+    float sa = std::sin(aAngle);
+
+    result(0, 0) = ca;
+    result(0, 2) = sa;
+    result(2, 0) = -sa;
+    result(2, 2) = ca;
+
+    return result; // Return the modified matrix
+
+	// (void)aAngle; // Avoid warnings about unused arguments until the function
+	//               // is properly implemented.
+	// return kIdentity44f;
 }
 
 inline
@@ -119,9 +154,21 @@ Mat44f make_rotation_z( float aAngle ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aAngle; // Avoid warnings about unused arguments until the function
-	              // is properly implemented.
-	return kIdentity44f;
+    Mat44f result = kIdentity44f; // Copy original identity matrix
+
+    float ca = std::cos(aAngle);
+    float sa = std::sin(aAngle);
+
+    result(0, 0) = ca;
+    result(0, 1) = -sa;
+    result(1, 0) = sa;
+    result(1, 1) = ca;
+
+    return result; // Return the modified matrix
+
+	// (void)aAngle; // Avoid warnings about unused arguments until the function
+	//               // is properly implemented.
+	// return kIdentity44f;
 }
 
 inline
@@ -129,9 +176,17 @@ Mat44f make_translation( Vec3f aTranslation ) noexcept
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aTranslation; // Avoid warnings about unused arguments until the function
-	                    // is properly implemented.
-	return kIdentity44f;
+    Mat44f result = kIdentity44f; // Copy original identity matrix
+
+    result(0, 3) = aTranslation.x;
+    result(1, 3) = aTranslation.y;
+    result(2, 3) = aTranslation.z;
+
+    return result; // Return the modified translation matrix
+
+	// (void)aTranslation; // Avoid warnings about unused arguments until the function
+	//                     // is properly implemented.
+	// return kIdentity44f;
 }
 inline
 Mat44f make_scaling( float aSX, float aSY, float aSZ ) noexcept
@@ -149,11 +204,26 @@ Mat44f make_perspective_projection( float aFovInRadians, float aAspect, float aN
 {
 	//TODO: your implementation goes here
 	//TODO: remove the following when you start your implementation
-	(void)aFovInRadians; // Avoid warnings about unused arguments until the function
-	(void)aAspect;       // is properly implemented.
-	(void)aNear;
-	(void)aFar;
-	return kIdentity44f;
+    Mat44f result = {}; // Start with a zero matrix to explicitly fill all fields
+
+    float s = 1.f / std::tan(aFovInRadians / 2.f); // Scale factor for FOV
+    float a = -(aFar + aNear) / (aFar - aNear);
+    float b = -(2.f * aFar * aNear) / (aFar - aNear);
+
+    result(0, 0) = s / aAspect; // Scale along the x-axis
+    result(1, 1) = s;          // Scale along the y-axis
+    result(2, 2) = a;          // Depth scale
+    result(2, 3) = b;          // Depth translation
+    result(3, 2) = -1.f;       // Perspective division term
+
+    return result; // Return the perspective projection matrix
+
+
+	// (void)aFovInRadians; // Avoid warnings about unused arguments until the function
+	// (void)aAspect;       // is properly implemented.
+	// (void)aNear;
+	// (void)aFar;
+	// return kIdentity44f;
 }
 
 #endif // MAT44_HPP_E7187A26_469E_48AD_A3D2_63150F05A4CA
