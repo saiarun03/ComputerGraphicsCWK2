@@ -65,7 +65,8 @@ all: prebuild prelink $(TARGET)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/empty.o \
+	$(OBJDIR)/mat44-mult.o \
+	$(OBJDIR)/mat44-rotation.o \
 
 RESOURCES := \
 
@@ -124,7 +125,11 @@ else
 $(OBJECTS): | $(OBJDIR)
 endif
 
-$(OBJDIR)/empty.o: empty.cpp
+$(OBJDIR)/mat44-mult.o: mat44-mult.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/mat44-rotation.o: mat44-rotation.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 
