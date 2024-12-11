@@ -67,6 +67,7 @@ endif
 OBJECTS := \
 	$(OBJDIR)/mat44-mult.o \
 	$(OBJDIR)/mat44-rotation.o \
+  $(OBJDIR)/mat44-project.o \
 
 RESOURCES := \
 
@@ -130,6 +131,10 @@ $(OBJDIR)/mat44-mult.o: mat44-mult.cpp
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 
 $(OBJDIR)/mat44-rotation.o: mat44-rotation.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/mat44-project.o: mat44-project.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 
