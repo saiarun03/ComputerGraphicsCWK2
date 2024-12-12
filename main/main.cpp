@@ -23,11 +23,31 @@
 
 namespace
 {
-	constexpr char const* kWindowTitle = "COMP3811 - CW2";
-	
+	constexpr char const* kWindowTitle = "Meshes";
+
+	constexpr float kMovementPerSecond_ = 5.f; // units per second
+	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
+
+	struct State_
+	{
+		ShaderProgram* prog;
+
+		struct CamCtrl_
+		{
+			bool cameraActive;
+			bool actionZoomIn, actionZoomOut;
+			
+			float phi, theta;
+			float radius;
+
+			float lastX, lastY;
+		} camControl;
+	};
+
 	void glfw_callback_error_( int, char const* );
 
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
+	void glfw_callback_motion_( GLFWwindow*, double, double );
 
 	struct GLFWCleanupHelper
 	{
@@ -38,12 +58,11 @@ namespace
 		~GLFWWindowDeleter();
 		GLFWwindow* window;
 	};
-
 }
 
 int main() try
 {
-	// Initialize GLFW
+	/// Initialize GLFW
 	if( GLFW_TRUE != glfwInit() )
 	{
 		char const* msg = nullptr;
@@ -62,12 +81,19 @@ int main() try
 
 	//glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE );
 
+#	if !defined(__APPLE__)
+	// Most platforms will support OpenGL 4.3
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
+#	else // defined(__APPLE__)
+	// Apple has at most OpenGL 4.1, so don't ask for something newer.
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
+#	endif // ~ __APPLE__
 	glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 
-	glfwWindowHint( GLFW_DEPTH_BITS, 24 );
+	//TODO: additional GLFW configuration here
 
 #	if !defined(NDEBUG)
 	// When building in debug mode, request an OpenGL debug context. This
@@ -76,6 +102,7 @@ int main() try
 	glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE );
 #	endif // ~ !NDEBUG
 
+	glfwWindowHint(GLFW_DEPTH_BITS, 24);
 	GLFWwindow* window = glfwCreateWindow(
 		1280,
 		720,
@@ -94,8 +121,10 @@ int main() try
 
 
 	// Set up event handling
+	State_ state{};
 	// TODO: Additional event handling setup
 
+	glfwSetWindowUserPointer( window, &state );
 	glfwSetKeyCallback( window, &glfw_callback_key_ );
 
 	// Set up drawing stuff
@@ -121,6 +150,10 @@ int main() try
 	OGL_CHECKPOINT_ALWAYS();
 
 	// TODO: global GL setup goes here
+	glEnable( GL_FRAMEBUFFER_SRGB);
+	//glEnable( GL_CULL_FACE);
+	glEnable( GL_DEPTH_TEST);
+	glClearColor( 0.2f, 0.2f, 0.2f, 0.0f );
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -133,12 +166,30 @@ int main() try
 
 	glViewport( 0, 0, iwidth, iheight );
 
-	// Other initialization & loading
-	OGL_CHECKPOINT_ALWAYS();
+	// // Other initialization & loading
+	// OGL_CHECKPOINT_ALWAYS();
 	
-	// TODO: global GL setup goes here
+	// // TODO: global GL setup goes here
 
-	OGL_CHECKPOINT_ALWAYS();
+	// OGL_CHECKPOINT_ALWAYS();
+
+	// Load shader program
+	ShaderProgram prog( {
+		{ GL_VERTEX_SHADER, "assets/cw2/default.vert" },
+		{ GL_FRAGMENT_SHADER, "assets/cw2/default.frag" }
+	} );
+
+	state.prog = &prog;
+	state.camControl.radius = 10.f;
+
+	// Animation state
+	auto last = Clock::now();
+
+	float angle = 0.f;
+
+	auto langerso = load_wavefront_obj("assets/cw2/langerso.obj");
+	GLuint langersovao = create_vao(langerso);
+	std::size_t drawLangerso = langerso.positions.size();
 
 	// Main loop
 	while( !glfwWindowShouldClose( window ) )
@@ -170,13 +221,51 @@ int main() try
 		}
 
 		// Update state
-		//TODO: update state
+		auto const now = Clock::now();
+		float dt = std::chrono::duration_cast<Secondsf>(now-last).count();
+		last = now;
+
+
+		angle += dt * std::numbers::pi_v<float> * 0.3f;
+		if( angle >= 2.f*std::numbers::pi_v<float> )
+			angle -= 2.f*std::numbers::pi_v<float>;
+
+		// Update camera state
+		if( state.camControl.actionZoomIn )
+			state.camControl.radius -= kMovementPerSecond_ * dt;
+		else if( state.camControl.actionZoomOut )
+			state.camControl.radius += kMovementPerSecond_ * dt;
+
+		if( state.camControl.radius <= 0.1f )
+			state.camControl.radius = 0.1f;
+
+		// Update: compute matrices
+		//TODO: define and compute projCameraWorld matrix
+		Mat44f model2world = make_rotation_y(0);
+		Mat44f world2camera = make_rotation_x(state.camControl.theta) * make_rotation_y(state.camControl.phi) * make_translation({0.f, 0.f, -state.camControl.radius});
+		Mat44f projection = make_perspective_projection(
+			60.f * std::numbers::pi_v<float> / 180.f,
+			fbwidth/float(fbheight),
+			0.1f, 100.0f
+		);
+		Mat44f projCameraWorld = projection * world2camera * model2world;
 
 		// Draw scene
 		OGL_CHECKPOINT_DEBUG();
 
 		//TODO: draw frame
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(prog.programId());
 
+		static float const baseColor[] = {0.2f, 1.f, 1.f};
+		glUniform3fv(3, 1, baseColor);
+		glBindVertexArray(langersovao);
+
+		glUniformMatrix4fv(0, 1, GL_TRUE, projCameraWorld.v);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		// Draw scene
+		glDrawArrays(GL_TRIANGLES, 0, drawLangerso);
 		OGL_CHECKPOINT_DEBUG();
 
 		// Display results
@@ -184,6 +273,7 @@ int main() try
 	}
 
 	// Cleanup.
+	state.prog = nullptr;
 	//TODO: additional cleanup
 	
 	return 0;
@@ -211,8 +301,82 @@ namespace
 			glfwSetWindowShouldClose( aWindow, GLFW_TRUE );
 			return;
 		}
+
+		if( auto* state = static_cast<State_*>(glfwGetWindowUserPointer( aWindow )) )
+		{
+			// R-key reloads shaders.
+			if( GLFW_KEY_R == aKey && GLFW_PRESS == aAction )
+			{
+				if( state->prog )
+				{
+					try
+					{
+						state->prog->reload();
+						std::fprintf( stderr, "Shaders reloaded and recompiled.\n" );
+					}
+					catch( std::exception const& eErr )
+					{
+						std::fprintf( stderr, "Error when reloading shader:\n" );
+						std::fprintf( stderr, "%s\n", eErr.what() );
+						std::fprintf( stderr, "Keeping old shader.\n" );
+					}
+				}
+			}
+
+			// Space toggles camera
+			if( GLFW_KEY_SPACE == aKey && GLFW_PRESS == aAction )
+			{
+				state->camControl.cameraActive = !state->camControl.cameraActive;
+
+				if( state->camControl.cameraActive )
+					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN );
+				else
+					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+			}
+
+			// Camera controls if camera is active
+			if( state->camControl.cameraActive )
+			{
+				if( GLFW_KEY_W == aKey )
+				{
+					if( GLFW_PRESS == aAction )
+						state->camControl.actionZoomIn = true;
+					else if( GLFW_RELEASE == aAction )
+						state->camControl.actionZoomIn = false;
+				}
+				else if( GLFW_KEY_S == aKey )
+				{
+					if( GLFW_PRESS == aAction )
+						state->camControl.actionZoomOut = true;
+					else if( GLFW_RELEASE == aAction )
+						state->camControl.actionZoomOut = false;
+				}
+			}
+		}
 	}
 
+	void glfw_callback_motion_( GLFWwindow* aWindow, double aX, double aY )
+	{
+		if( auto* state = static_cast<State_*>(glfwGetWindowUserPointer( aWindow )) )
+		{
+			if( state->camControl.cameraActive )
+			{
+				auto const dx = float(aX-state->camControl.lastX);
+				auto const dy = float(aY-state->camControl.lastY);
+
+				state->camControl.phi += dx*kMouseSensitivity_;
+				
+				state->camControl.theta += dy*kMouseSensitivity_;
+				if( state->camControl.theta > std::numbers::pi_v<float>/2.f )
+					state->camControl.theta = std::numbers::pi_v<float>/2.f;
+				else if( state->camControl.theta < -std::numbers::pi_v<float>/2.f )
+					state->camControl.theta = -std::numbers::pi_v<float>/2.f;
+			}
+
+			state->camControl.lastX = float(aX);
+			state->camControl.lastY = float(aY);
+		}
+	}
 }
 
 namespace
