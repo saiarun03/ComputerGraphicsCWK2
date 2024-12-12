@@ -17,7 +17,9 @@
 #include "../vmlib/mat44.hpp"
 
 #include "defaults.hpp"
-
+#include "cone.hpp"
+#include "cylinder.hpp"
+#include "loadobj.hpp"
 
 namespace
 {

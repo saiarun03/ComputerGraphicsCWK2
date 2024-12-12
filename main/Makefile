@@ -66,6 +66,10 @@ endif
 
 OBJECTS := \
 	$(OBJDIR)/main.o \
+	$(OBJDIR)/simple_mesh.o \
+	$(OBJDIR)/loadobj.o \
+	$(OBJDIR)/cone.o \
+	$(OBJDIR)/cylinder.o \
 
 RESOURCES := \
 
@@ -125,6 +129,22 @@ $(OBJECTS): | $(OBJDIR)
 endif
 
 $(OBJDIR)/main.o: main.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/simple_mesh.o: simple_mesh.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/loadobj.o: loadobj.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/cone.o: cone.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+$(OBJDIR)/cylinder.o: cylinder.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 
